@@ -1,0 +1,252 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Products list</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <h2>List of products</h2>
+    <form name="productForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="mb-3">
+            <label class="form-label" for="name">Name:</label>
+            <input class="form-control" name="name" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="price">Price:</label>
+            <input class="form-control" name="price" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="type">Type:</label>
+            <input class="form-control" name="type" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="brand">Brand:</label>
+            <input class="form-control" name="brand" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="count">Count:</label>
+            <input class="form-control" name="count" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="size">Size:</label>
+            <input class="form-control" name="size" />
+        </div>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+            <a id="reset" class="btn btn-sm btn-primary">Reset</a>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Type</th>
+                <th>Brand</th>
+                <th>Count</th>
+                <th>Size</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        //get all products
+        async function getProducts() {
+            const response = await fetch("/api/products", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                 //get data
+                const products = await response.json();
+                const rows = document.querySelector("tbody");
+                //add data to table
+                products.forEach(product => rows.append(row(product)));
+            }
+        }
+
+        //get one product
+        async function getProduct(id) {
+            const response = await fetch("/api/products/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const product = await response.json();
+                const form = document.forms["productForm"];
+                form.elements["id"].value = product.id;
+                form.elements["name"].value = product.name;
+                form.elements["price"].value = product.price;
+                form.elements["type"].value = product.type;
+                form.elements["brand"].value = product.brand;
+                form.elements["count"].value = product.count;
+                form.elements["size"].value = product.size;
+            }
+            else {
+                
+                const error = await response.json();
+                console.log(error.message);  
+            }
+        }
+
+        //add product
+        async function addProduct(pName, pPrice, pType, pBrand, pCount, pSize) {
+            const response = await fetch("api/products", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: pName,
+                    price: parseInt(pPrice, 10),
+                    type: pType,
+                    brand: pBrand,
+                    count: parseInt(pCount, 10),
+                    size: pSize
+                })
+            });
+            if (response.ok === true) {
+                const product = await response.json();
+                reset();
+                document.querySelector("tbody").append(row(product));
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+           
+        }
+
+        //edit product
+        async function editProduct(pId, pName, pPrice, pType, pBrand, pCount, pSize) {
+            const response = await fetch("api/products", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: pId,
+                    name: pName,
+                    price: parseInt(pPrice, 10),
+                    type: pType,
+                    brand: pBrand,
+                    count: parseInt(pCount, 10),
+                    size: pSize
+                })
+            });
+            if (response.ok === true) {
+                const product = await response.json();
+                reset();
+                document.querySelector("tr[data-rowid='" + product.id + "']").replaceWith(row(product));
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        //delete product
+        async function deleteProduct(id) {
+            const response = await fetch("/api/products/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const product = await response.json();
+                document.querySelector("tr[data-rowid='" + product.id + "']").remove();
+            }
+            else {
+                const error = await response.json();
+                console.log(error.message);
+            }
+        }
+
+        //reset the form after sending
+        function reset() {
+            const form = document.forms["productForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+
+        //creating row in table
+        function row(product) {
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", product.id);
+
+            const nameTd = document.createElement("td");
+            nameTd.append(product.name);
+            tr.append(nameTd);
+
+            const priceTd = document.createElement("td");
+            priceTd.append(product.price);
+            tr.append(priceTd);
+
+            const typeTd = document.createElement("td");
+            typeTd.append(product.type);
+            tr.append(typeTd);
+
+            const brandTd = document.createElement("td");
+            brandTd.append(product.brand);
+            tr.append(brandTd);
+
+            const countTd = document.createElement("td");
+            countTd.append(product.count);
+            tr.append(countTd);
+
+            const sizeTd = document.createElement("td");
+            sizeTd.append(product.size);
+            tr.append(sizeTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Edit");
+            editLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                getProduct(product.id);
+            });
+            linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Delete");
+            removeLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                deleteProduct(product.id);
+            });
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+
+        document.getElementById("reset").addEventListener("click", e => {
+
+            e.preventDefault();
+            reset();
+        })
+
+        //sending form
+        document.forms["productForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["productForm"];
+            const id = form.elements["id"].value;
+            const name = form.elements["name"].value;
+            const price = form.elements["price"].value;
+            const type = form.elements["type"].value;
+            const brand = form.elements["brand"].value;
+            const count = form.elements["count"].value;
+            const size = form.elements["size"].value;
+
+            if (id == 0) addProduct(name, price, type, brand, count, size)
+            else
+                editProduct(name, price, type, brand, count, size)
+        });
+
+        getProducts();
+    </script>
+</body>
+</html>
